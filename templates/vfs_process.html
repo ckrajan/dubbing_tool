@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script nonce="undefined" src="https://cdn.zingchart.com/zingchart.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
+    integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+    integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="static/main.css">
+</head>
+
+<body style="background-color: pink;">
+
+  <div id="partner_language" data-language="en"></div>
+
+  <div id="myChart"></div>
+
+  <div class="container">
+    <div class="row justify-content-center mt-4">
+      <div class="col-lg-7 col-md-10 col-12 text-center">
+        <div id="rectangle">
+          <span id="choose_rec" class="choose">Choose a method below</span>
+          <a id="record-camera" href="javascript:main()" class="cameratag_action_icon cam_icon record_icon">
+            <i class="fas fa-video" aria-hidden="true"></i>
+            <span>Start the camera</span>
+          </a>
+          <input type="file" id="upload" accept="video/mp4,video/x-m4v,video/*" style="display:none;">
+          <a id="upload-button" class="cameratag_prompt_label cam_icon upload_icon"><i class="fas fa-cloud-upload-alt"
+              aria-hidden="true"></i><span>Open the video file</span></a>
+
+          <div style="display:none;" id="spinner"></div>
+
+          <div class="canvas_camera">
+            <div class="canvas-wrapper w-100">
+              <canvas id="output"></canvas>
+              <!-- <canvas id="recorded_output" hidden></canvas> -->
+              <video id="recorded" playsinline hidden style="
+              width: 100%;
+              margin:0;
+              height: auto;">
+              </video>
+
+              <canvas id="raw_output" hidden></canvas>
+              <canvas id="thumb_canvas" hidden></canvas>
+              <button id="thumb_upload" onclick="thumb_upload()" style="display:none;"></button>
+
+              <video id="video" autoplay playsinline style="
+                          visibility: hidden;
+                          width: 100%;
+                          margin:0;
+                          height: auto;
+                          " muted>
+              </video>
+
+            </div>
+          </div>
+
+          <div id="rec_indicator" style="display:none;">
+            <div id="blink">🔴 <span class="minute">00</span>:<span class="second">00</span>
+            </div>
+          </div>
+
+          <a id="playback" style="display:none;"><i class="fa fa-play"
+              style="font-size:70px;color:rgb(248, 248, 248)"></i></a>
+
+          <div class="counter_div">
+            <span id="counter" style="display:none;"></span>
+          </div> <br>
+
+          <div id="loader" style="display:none;">
+            <div class="inner one"></div>
+            <div class="inner two"></div>
+            <div class="inner three"></div>
+          </div>
+
+          <div id="result_wait" style="display:none;">Your video is processing. This should only take a few seconds.
+          </div>
+          <div id="process_complete" style="display:none;">Your video has been processed and results are published.
+          </div>
+          <div id="min_duration" style="display:none;">Your video recording is not long enough to process. <br>Please
+            record another video.<br><br>
+            <a href="javascript:rerecordVideo()" style="color: #eb9748">Click here</a> to Re-record
+          </div>
+
+          <div id="transcribe_failed" style="display:none;">Your video fails to process transcription. <br>Please record
+            another video.<br><br>
+            <a href="javascript:rerecordVideo()" style="color: #eb9748">Click here</a> to Re-record
+          </div>
+
+          <div style="display:none;" id="controls">
+            <form>
+              <label style="margin-right: 10px">Controls: </label>
+              <label style="margin-right: 40px">
+                <input id="show_metrics" type="checkbox" value="" style="margin-right: 10px">Show Metrics
+              </label>
+
+              <!-- <label>
+              <input id="show_mesh" type="checkbox" value="" style="margin-right: 10px">Show FaceMesh
+            </label> -->
+
+            </form>
+          </div>
+          <div class="control_btns mt-4">
+            <button id="record-button" class="btn fas" style="display:none;">Start Recording</button>
+            <button id="accept-button" class="btn" style="display:none;" disabled="disabled"><i class="far fa-save"></i>
+              Accept & Publish</button>
+            <button id="reject-button" class="btn" style="display:none;" disabled="disabled"><i
+                class="fas fa-times-circle"></i> Re-Record</button>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+
+<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"/></script>
+<script type="text/javascript" src="https://cdn.rawgit.com/jasondavies/d3-cloud/master/build/d3.layout.cloud.js"/></script>
+
+<!-- Load TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.0/dist/tf.min.js"></script>
+<!-- Load KNN Classifier -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+  integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+
+<!-- Load SENTRY.js -->
+<script
+  src="https://browser.sentry-cdn.com/6.19.2/bundle.tracing.min.js"
+  integrity="sha384-G1VqZlLcIl6gMIayWnvwQjuW9FyHrIoQJuyWH9Yaq8XnAn7c9jckfswqVnzR1a6l"
+  crossorigin="anonymous"
+></script>
+
+<!-- Load three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.106.2/build/three.min.js"></script>
+<!-- Require the peer dependencies of face-landmarks-detection. -->
+<script src="https://unpkg.com/@tensorflow/tfjs-core@2.4.0/dist/tf-core.js"></script>
+<script src="https://unpkg.com/@tensorflow/tfjs-converter@2.4.0/dist/tf-converter.js"></script>
+
+<!-- You must explicitly require a TF.js backend if you're not using the tfjs union bundle. -->
+<script src="https://unpkg.com/@tensorflow/tfjs-backend-webgl@2.4.0/dist/tf-backend-webgl.js"></script>
+<script src="https://unpkg.com/@tensorflow/tfjs-backend-wasm@2.4.0/dist/tf-backend-wasm.js"></script>
+<script src="https://unpkg.com/@tensorflow/tfjs-backend-cpu@2.4.0/dist/tf-backend-cpu.js"></script>
+
+<!-- Require face-landmarks-detection itself. -->
+<script
+  src="https://unpkg.com/@tensorflow-models/face-landmarks-detection@0.0.1/dist/face-landmarks-detection.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/6.1.0/math.js"></script>
+<!-- <script defer src="static/face-api.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="static/vfs_process.js"></script>
+
+</html>

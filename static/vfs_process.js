@@ -348,7 +348,7 @@ function uploadVfsScore(res_json, filename = 'res.json') {
 
 var emotion = 'smile';
 
-async function renderPrediction() {
+function renderPrediction() {
   stats.begin();
 
   if (!review) {
@@ -693,7 +693,7 @@ async function renderPrediction2() {
 
       rafID = requestAnimationFrame(renderPrediction2);
 
-    }, 100);
+    }, 33);
 
   }
 };
@@ -788,7 +788,6 @@ async function main() {
 }
 
 async function initrecord() {
-
   await load();
   //await tf.setBackend(isMobile()?'wasm':'webgl');
   wrapper();
@@ -1000,6 +999,12 @@ function putValue(hour, minutes, seconds, milliseconds) {
 }
 
 function toggleRecording() {
+
+  // console.log(stream.getVideoTracks()[0].getSettings().deviceId);
+  // console.log(stream.getVideoTracks()[0].getSettings().frameRate);
+  // console.log(stream.getVideoTracks()[0].getSettings().height);
+  // console.log(stream.getVideoTracks()[0].getSettings().width);
+
   mic_muted = stream.getAudioTracks()[0].muted;
   if (mic_muted == true) {
     alert(mic_off);
@@ -1125,7 +1130,7 @@ function startRecording() {
 function stopRecording() {
   clearInterval(intervalTime);
   var myJsonString = JSON.stringify(arr_timepoints);
-  console.log("myJsonString:: ",myJsonString);
+  console.log("myJsonString:: ", myJsonString);
   var json_blob = new Blob([myJsonString], { type: 'text/json' });
   // json_file = new File([json_blob], 'baseline.json');
 
